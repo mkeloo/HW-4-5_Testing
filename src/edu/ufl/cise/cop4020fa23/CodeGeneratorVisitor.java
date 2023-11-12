@@ -1,6 +1,7 @@
 package edu.ufl.cise.cop4020fa23;
 
 import java.util.Map;
+import java.util.HashMap;
 
 
 import edu.ufl.cise.cop4020fa23.ast.*;
@@ -61,6 +62,67 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 //    }
 
 
+//    @Override
+//    public Object visitProgram(Program program, Object arg) throws PLCCompilerException {
+//        StringBuilder code = new StringBuilder();
+//
+//        // Get the name of the program
+//        String className = program.getName();
+//
+//        // Get the return type of the program
+//        Type returnType = program.getType();
+//        String javaReturnType = getJavaType(returnType);  // Convert to Java type
+//
+//        // Adding package declaration
+//        String packageName = "edu.ufl.cise.cop4020fa23";
+//        code.append(String.format("package %s;\n\n", packageName));
+//
+//
+//        // Visit the parameters (name definitions)
+//        StringBuilder params = new StringBuilder();
+//        for (NameDef param : program.getParams()) {
+//            String paramName = "param_" + param.getName();
+//            String paramType = getJavaType(param.getType());  // Convert to Java type
+//            String paramCode = String.format("%s %s", paramType, paramName);
+//            if (params.length() > 0) params.append(", ");
+//            params.append(paramCode);
+//        }
+//
+//        // Set the modified parameter names in the argument (if it's a Map)
+//        if (arg instanceof Map) {
+//            Map<String, String> argMap = (Map<String, String>) arg;
+//            for (NameDef param : program.getParams()) {
+//                argMap.put(param.getName(), "param_" + param.getName());
+//            }
+//        }
+//
+//        // Visit the block (body of the apply method)
+//        String blockCode = (String) program.getBlock().visit(this, arg);
+//
+//        // Format the generated code
+//        code.append(String.format("public class %s {\n", className));
+//        code.append(String.format("    public static %s apply(%s) {\n", javaReturnType, params));
+//        code.append(blockCode);
+//        code.append("    }\n");
+//        code.append("}\n");
+//
+//        return code.toString();
+//    }
+//
+//
+//    private String getJavaType(Type type) {
+//        switch (type) {
+//            case BOOLEAN: return "boolean";
+//            case INT: return "int";
+//            case STRING: return "String";
+////            case VOID: return "void";
+//            // Add other type conversions as needed
+//            default: return type.toString().toLowerCase();
+//        }
+//    }
+//
+
+
     @Override
     public Object visitProgram(Program program, Object arg) throws PLCCompilerException {
         StringBuilder code = new StringBuilder();
@@ -78,24 +140,20 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
         // Visit the parameters (name definitions)
         StringBuilder params = new StringBuilder();
+        Map<String, String> paramMap = new HashMap<>(); // Create a map for parameter name mapping
         for (NameDef param : program.getParams()) {
-            String paramName = "param_" + param.getName();
+            String originalName = param.getName();
+            String paramName = "param_" + originalName;
             String paramType = getJavaType(param.getType());  // Convert to Java type
             String paramCode = String.format("%s %s", paramType, paramName);
             if (params.length() > 0) params.append(", ");
             params.append(paramCode);
+
+            paramMap.put(originalName, paramName); // Populate the paramMap
         }
 
-        // Set the modified parameter names in the argument (if it's a Map)
-        if (arg instanceof Map) {
-            Map<String, String> argMap = (Map<String, String>) arg;
-            for (NameDef param : program.getParams()) {
-                argMap.put(param.getName(), "param_" + param.getName());
-            }
-        }
-
-        // Visit the block (body of the apply method)
-        String blockCode = (String) program.getBlock().visit(this, arg);
+        // Visit the block (body of the apply method) with paramMap
+        String blockCode = (String) program.getBlock().visit(this, paramMap);
 
         // Format the generated code
         code.append(String.format("public class %s {\n", className));
@@ -107,16 +165,15 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         return code.toString();
     }
 
-
     private String getJavaType(Type type) {
         switch (type) {
             case BOOLEAN: return "boolean";
             case INT: return "int";
+            case STRING: return "String";
             // Add other type conversions as needed
             default: return type.toString().toLowerCase();
         }
     }
-
 
 
     @Override
@@ -254,21 +311,61 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 //    }
 
 
+//    @Override
+//    public Object visitIdentExpr(IdentExpr identExpr, Object arg) throws PLCCompilerException {
+//        // Assuming that 'arg' is a map that contains the mapping from identifier names to their corresponding parameter names
+//        Map<String, String> paramMap = (Map<String, String>) arg;
+//
+//        // Get the original name of the identifier
+//        String originalName = identExpr.getName();
+//
+//        // Check if there is a mapping for this identifier name
+//        String paramName = paramMap.getOrDefault(originalName, originalName);
+//
+//        // Return the parameter name
+//        return paramName;
+//    }
+
     @Override
     public Object visitIdentExpr(IdentExpr identExpr, Object arg) throws PLCCompilerException {
-        // Assuming that 'arg' is a map that contains the mapping from identifier names to their corresponding parameter names
-        Map<String, String> paramMap = (Map<String, String>) arg;
-
-        // Get the original name of the identifier
-        String originalName = identExpr.getName();
-
-        // Check if there is a mapping for this identifier name
-        String paramName = paramMap.getOrDefault(originalName, originalName);
-
-        // Return the parameter name
-        return paramName;
+        if (arg instanceof Map) {
+            Map<String, String> paramMap = (Map<String, String>) arg;
+            String originalName = identExpr.getName();
+            String paramName = paramMap.getOrDefault(originalName, originalName);
+            return paramName;
+        } else {
+            // Implement appropriate logic for cases where 'arg' is not a Map
+            // For example, returning the identifier's name as is
+            return identExpr.getName();
+        }
     }
 
+
+
+
+//    @Override
+//    public Object visitIdentExpr(IdentExpr identExpr, Object arg) throws PLCCompilerException {
+//        // Check if 'arg' is a Map
+//        if (arg instanceof Map) {
+//            // Safe to cast 'arg' to Map here
+//            Map<String, String> paramMap = (Map<String, String>) arg;
+//
+//            // Get the original name of the identifier
+//            String originalName = identExpr.getName();
+//
+//            // Check if there is a mapping for this identifier name
+//            String paramName = paramMap.getOrDefault(originalName, originalName);
+//
+//            // Return the parameter name
+//            return paramName;
+//        } else {
+//            // Handle the case where 'arg' is not a Map
+//            // Depending on your implementation, you might want to throw an exception,
+//            // return a default value, or handle it in some other way.
+//            // For example, returning the name of the identifier as is:
+//            return identExpr.getName();
+//        }
+//    }
 
 
 
