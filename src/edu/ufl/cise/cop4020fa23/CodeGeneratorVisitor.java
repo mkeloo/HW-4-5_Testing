@@ -28,6 +28,8 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         // Adding package and import statements
         String packageName = "edu.ufl.cise.cop4020fa23";
         code.append(String.format("package %s;\n", packageName));
+        code.append("import edu.ufl.cise.cop4020fa23.runtime.ConsoleIO;\n\n"); // Import statement for ConsoleIO
+
 
         // Visit the parameters (name definitions)
         StringBuilder params = new StringBuilder();
