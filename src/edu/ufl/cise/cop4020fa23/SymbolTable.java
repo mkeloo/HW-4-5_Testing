@@ -3,6 +3,8 @@ package edu.ufl.cise.cop4020fa23;
 import edu.ufl.cise.cop4020fa23.ast.NameDef;
 import edu.ufl.cise.cop4020fa23.exceptions.TypeCheckException;
 
+
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Stack;
@@ -12,6 +14,8 @@ class SymbolTable {
     private final Stack<Integer> scopeStack;
     private int currentScope;
     private int nextScope;
+
+
 
     public SymbolTable() {
         table = new HashMap<>();
