@@ -2,6 +2,7 @@ package edu.ufl.cise.cop4020fa23;
 
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Stack;
 
 
 import edu.ufl.cise.cop4020fa23.ast.*;
@@ -123,9 +124,13 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 //
 
 
+
     @Override
     public Object visitProgram(Program program, Object arg) throws PLCCompilerException {
         StringBuilder code = new StringBuilder();
+
+        Stack<Map<String, NameDef>> scopeStack = new Stack<>();
+        scopeStack.push(new HashMap<>()); // Push the global scope
 
         // Get the name of the program
         String className = program.getName();
@@ -134,9 +139,9 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         Type returnType = program.getType();
         String javaReturnType = getJavaType(returnType);  // Convert to Java type
 
-        // Adding package declaration
+        // Adding package and import statements
         String packageName = "edu.ufl.cise.cop4020fa23";
-        code.append(String.format("package %s;\n\n", packageName));
+        code.append(String.format("package %s;\n", packageName));
 
         // Visit the parameters (name definitions)
         StringBuilder params = new StringBuilder();
@@ -176,59 +181,138 @@ public class CodeGeneratorVisitor implements ASTVisitor {
     }
 
 
+//    @Override
+//    public Object visitBlock(Block block, Object arg) throws PLCCompilerException {
+//        StringBuilder code = new StringBuilder();
+//
+//        // Start the block
+//        code.append("{\n");
+//
+//        // Visit each block element and append the generated code
+//        for (Block.BlockElem blockElem : block.getElems()) {
+//            String blockElemCode = (String) blockElem.visit(this, arg);
+//            code.append(blockElemCode);
+//            // Add a semicolon after each declaration or statement
+////            if (blockElem instanceof Declaration || blockElem instanceof Statement) {
+////                code.append(";\n");
+////            }
+//        }
+//
+//        // End the block
+//        code.append("}\n");
+//
+//        return code.toString();
+//    }
+
+//    @Override
+//    public Object visitBlock(Block block, Object arg) throws PLCCompilerException {
+//        StringBuilder code = new StringBuilder();
+//        code.append("{\n");
+//
+//        // Push a new scope onto the stack
+//        if (arg instanceof Stack) {
+//            Stack<Map<String, NameDef>> scopeStack = (Stack<Map<String, NameDef>>) arg;
+//            scopeStack.push(new HashMap<>());
+//        }
+//
+//        // Process each block element
+//        for (Block.BlockElem blockElem : block.getElems()) {
+//            String blockElemCode = (String) blockElem.visit(this, arg);
+//            code.append(blockElemCode);
+//        }
+//
+//        // Pop the current scope off the stack
+//        if (arg instanceof Stack) {
+//            ((Stack<Map<String, NameDef>>) arg).pop();
+//        }
+//
+//        code.append("}\n");
+//        return code.toString();
+//    }
+
+
     @Override
     public Object visitBlock(Block block, Object arg) throws PLCCompilerException {
         StringBuilder code = new StringBuilder();
-
-        // Start the block
         code.append("{\n");
 
-        // Visit each block element and append the generated code
+        // Process each block element
         for (Block.BlockElem blockElem : block.getElems()) {
             String blockElemCode = (String) blockElem.visit(this, arg);
             code.append(blockElemCode);
-            // Add a semicolon after each declaration or statement
-//            if (blockElem instanceof Declaration || blockElem instanceof Statement) {
-//                code.append(";\n");
-//            }
         }
 
-        // End the block
         code.append("}\n");
-
         return code.toString();
     }
+
+
+
+
+
+//    @Override
+//    public Object visitNameDef(NameDef nameDef, Object arg) throws PLCCompilerException {
+//        StringBuilder code = new StringBuilder();
+//
+//        // Map from programming language types to Java types
+//        Map<Type, String> typeMapping = Map.of(
+//                Type.INT, "int",
+//                Type.BOOLEAN, "boolean",
+//                Type.STRING, "String",
+//                Type.VOID, "void",
+//                Type.IMAGE, "ImageType", // Replace "ImageType" with the actual Java type for IMAGE
+//                Type.PIXEL, "PixelType"  // Replace "PixelType" with the actual Java type for PIXEL
+//        );
+//
+//        // Get the programming language type
+//        Type type = nameDef.getType();
+//
+//        // Get the corresponding Java type and append it to the code
+//        String javaType = typeMapping.get(type);
+//        if (javaType == null) {
+//            throw new PLCCompilerException("Unsupported type: " + type);
+//        }
+//        code.append(javaType).append(" ");
+//
+//        // Append the Java name of the identifier
+//        String javaName = nameDef.getName(); // Assuming the Java name is the same as the identifier's text
+//        code.append(javaName);
+//
+//        // Handle the optional dimension
+//        Dimension dimension = nameDef.getDimension();
+//        if (dimension != null) {
+//            String dimensionCode = (String) dimension.visit(this, arg);
+//            code.append(dimensionCode);
+//        }
+//
+//        return code.toString();
+//    }
 
 
     @Override
     public Object visitNameDef(NameDef nameDef, Object arg) throws PLCCompilerException {
         StringBuilder code = new StringBuilder();
 
-        // Map from programming language types to Java types
         Map<Type, String> typeMapping = Map.of(
                 Type.INT, "int",
                 Type.BOOLEAN, "boolean",
                 Type.STRING, "String",
                 Type.VOID, "void",
-                Type.IMAGE, "ImageType", // Replace "ImageType" with the actual Java type for IMAGE
-                Type.PIXEL, "PixelType"  // Replace "PixelType" with the actual Java type for PIXEL
+                Type.IMAGE, "ImageType",
+                Type.PIXEL, "PixelType"
         );
 
-        // Get the programming language type
         Type type = nameDef.getType();
-
-        // Get the corresponding Java type and append it to the code
         String javaType = typeMapping.get(type);
         if (javaType == null) {
             throw new PLCCompilerException("Unsupported type: " + type);
         }
-        code.append(javaType).append(" ");
 
-        // Append the Java name of the identifier
-        String javaName = nameDef.getName(); // Assuming the Java name is the same as the identifier's text
-        code.append(javaName);
+        // Set and append the Java name of the identifier
+        String javaName = nameDef.getName(); // This gets the original name
+        nameDef.setJavaName(javaName); // Ensure javaName is set in NameDef
+        code.append(javaType).append(" ").append(javaName);
 
-        // Handle the optional dimension
         Dimension dimension = nameDef.getDimension();
         if (dimension != null) {
             String dimensionCode = (String) dimension.visit(this, arg);
@@ -237,6 +321,10 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
         return code.toString();
     }
+
+
+
+
 
 
 //    @Override
@@ -252,31 +340,77 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 //    }
 
 
+//    @Override
+//    public Object visitDeclaration(Declaration declaration, Object arg) throws PLCCompilerException {
+//        StringBuilder code = new StringBuilder();
+//
+//        // Visit the NameDef node to generate the Java code for the declaration part
+//        NameDef nameDef = declaration.getNameDef();
+//        String nameDefCode = (String) nameDef.visit(this, arg);
+//        code.append(nameDefCode);
+//
+//        // Check if there is an initializer
+//        Expr initializer = declaration.getInitializer();
+//        if (initializer != null) {
+//            // Visit the Expr node to generate the Java code for the expression part
+//            String exprCode = (String) initializer.visit(this, arg);
+//
+//            // Combine the generated code for the declaration and the expression
+//            code.append(" = ").append(exprCode);
+//        }
+//
+//        // Add a semicolon at the end of the declaration
+//        code.append(";");
+//
+//        // Return the generated code
+//        return code.toString();
+//
+//    }
+
+//    @Override
+//    public Object visitDeclaration(Declaration declaration, Object arg) throws PLCCompilerException {
+//        StringBuilder code = new StringBuilder();
+//        NameDef nameDef = declaration.getNameDef();
+//
+//        if (arg instanceof Stack) {
+//            Map<String, NameDef> currentScope = ((Stack<Map<String, NameDef>>) arg).peek();
+//            currentScope.put(nameDef.getName(), nameDef);
+//        }
+//
+//        String nameDefCode = (String) nameDef.visit(this, arg);
+//        code.append(nameDefCode);
+//
+//        Expr initializer = declaration.getInitializer();
+//        if (initializer != null) {
+//            String exprCode = (String) initializer.visit(this, arg);
+//            code.append(" = ").append(exprCode);
+//        }
+//
+//        code.append(";");
+//        return code.toString();
+//    }
+
+
     @Override
     public Object visitDeclaration(Declaration declaration, Object arg) throws PLCCompilerException {
         StringBuilder code = new StringBuilder();
-
-        // Visit the NameDef node to generate the Java code for the declaration part
         NameDef nameDef = declaration.getNameDef();
+
+        // Generate code for the declaration
         String nameDefCode = (String) nameDef.visit(this, arg);
         code.append(nameDefCode);
 
-        // Check if there is an initializer
+        // Handle initializer if present
         Expr initializer = declaration.getInitializer();
         if (initializer != null) {
-            // Visit the Expr node to generate the Java code for the expression part
             String exprCode = (String) initializer.visit(this, arg);
-
-            // Combine the generated code for the declaration and the expression
             code.append(" = ").append(exprCode);
         }
 
-        // Add a semicolon at the end of the declaration
         code.append(";");
-
-        // Return the generated code
         return code.toString();
     }
+
 
 
     @Override
@@ -442,6 +576,28 @@ public class CodeGeneratorVisitor implements ASTVisitor {
     }
 
 
+//    @Override
+//    public Object visitUnaryExpr(UnaryExpr unaryExpr, Object arg) throws PLCCompilerException {
+//        StringBuilder sb = new StringBuilder();
+//
+//        // Retrieve the expression's code
+//        Object exprCode = unaryExpr.getExpr().visit(this, arg);
+//
+//        // Get the operator kind
+//        Kind opKind = unaryExpr.getOp();
+//
+//        // Handle unary operators
+//        String operator = switch(opKind) {
+//            case PLUS -> "+";
+//            case MINUS -> "-";
+//            case BANG -> "!";
+//            default -> throw new PLCCompilerException("Unsupported unary operator: " + opKind);
+//        };
+//
+//        sb.append(operator).append(exprCode);
+//        return sb.toString();
+//    }
+
     @Override
     public Object visitUnaryExpr(UnaryExpr unaryExpr, Object arg) throws PLCCompilerException {
         StringBuilder sb = new StringBuilder();
@@ -449,14 +605,13 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         // Retrieve the expression's code
         Object exprCode = unaryExpr.getExpr().visit(this, arg);
 
-        // Get the operator kind
+        // Get the operator kind and handle accordingly
         Kind opKind = unaryExpr.getOp();
-
-        // Handle unary operators
-        String operator = switch(opKind) {
+        String operator = switch (opKind) {
             case PLUS -> "+";
             case MINUS -> "-";
             case BANG -> "!";
+            // Add cases for other unary operators you support
             default -> throw new PLCCompilerException("Unsupported unary operator: " + opKind);
         };
 
@@ -465,19 +620,91 @@ public class CodeGeneratorVisitor implements ASTVisitor {
     }
 
 
+
+
+
+//    @Override
+//    public Object visitLValue(LValue lValue, Object arg) throws PLCCompilerException {
+//        // Retrieve the NameDef associated with this LValue
+//        NameDef nameDef = lValue.getNameDef();
+//
+//        // Check if the NameDef is not null
+//        if (nameDef == null) {
+//            throw new PLCCompilerException("NameDef not found for LValue: " + lValue);
+//        }
+//
+//        // Return the Java name associated with this LValue
+//        return nameDef.getJavaName();
+//    }
+
+
+//    @Override
+//    public Object visitLValue(LValue lValue, Object arg) throws PLCCompilerException {
+//        if (arg instanceof Stack) {
+//            Stack<Map<String, NameDef>> scopeStack = (Stack<Map<String, NameDef>>) arg;
+//            for (int i = scopeStack.size() - 1; i >= 0; i--) {
+//                Map<String, NameDef> scope = scopeStack.get(i);
+//                NameDef nameDef = scope.get(lValue.getNameToken().text());
+//                if (nameDef != null) {
+//                    return nameDef.getJavaName();
+//                }
+//            }
+//        }
+//        throw new PLCCompilerException("NameDef not found for LValue: " + lValue);
+//    }
+
+//    @Override
+//    public Object visitLValue(LValue lValue, Object arg) throws PLCCompilerException {
+//        if (arg instanceof Stack) {
+//            Stack<Map<String, NameDef>> scopeStack = (Stack<Map<String, NameDef>>) arg;
+//            for (Map<String, NameDef> scope : scopeStack) {
+//                NameDef nameDef = scope.get(lValue.getName());
+//                if (nameDef != null) {
+//                    return nameDef.getJavaName();
+//                }
+//            }
+//        }
+//        throw new PLCCompilerException("NameDef not found for LValue: " + lValue);
+//    }
+
+//    @Override
+//    public Object visitLValue(LValue lValue, Object arg) throws PLCCompilerException {
+//        if (lValue.getNameDef() != null) {
+//            return lValue.getNameDef().getJavaName();
+//        } else if (arg instanceof Stack) {
+//            Stack<Map<String, NameDef>> scopeStack = (Stack<Map<String, NameDef>>) arg;
+//            for (Map<String, NameDef> scope : scopeStack) {
+//                NameDef nameDef = scope.get(lValue.getNameToken().text());
+//                if (nameDef != null) {
+//                    return nameDef.getJavaName();
+//                }
+//            }
+//        }
+//        throw new PLCCompilerException("NameDef not found for LValue: " + lValue);
+//    }
+
+
     @Override
     public Object visitLValue(LValue lValue, Object arg) throws PLCCompilerException {
-        // Retrieve the NameDef associated with this LValue
-        NameDef nameDef = lValue.getNameDef();
-
-        // Check if the NameDef is not null
-        if (nameDef == null) {
-            throw new PLCCompilerException("NameDef not found for LValue: " + lValue);
+        // Check if the LValue already has a NameDef associated with it
+        if (lValue.getNameDef() != null) {
+            return lValue.getNameDef().getJavaName();
+        } else {
+            // If not, try to find the NameDef in the symbol table
+            if (arg instanceof Map) {
+                Map<String, String> paramMap = (Map<String, String>) arg;
+                String originalName = lValue.getName();
+                String paramName = paramMap.getOrDefault(originalName, originalName);
+                return paramName;
+            } else {
+                // The variable was not found in the current scope.
+                // This may indicate an undeclared variable or a scoping issue.
+                throw new PLCCompilerException("NameDef not found for LValue: " + lValue);
+            }
         }
-
-        // Return the Java name associated with this LValue
-        return nameDef.getJavaName();
     }
+
+
 
 
     @Override
@@ -530,6 +757,8 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         code.append("return ").append(exprCode).append(";\n");
         return code.toString();
     }
+
+
 
 
 
