@@ -3,20 +3,24 @@ package edu.ufl.cise.cop4020fa23;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Stack;
+import java.util.Set;
 
 
 import edu.ufl.cise.cop4020fa23.ast.*;
 import edu.ufl.cise.cop4020fa23.exceptions.PLCCompilerException;
+import edu.ufl.cise.cop4020fa23.exceptions.TypeCheckException;
+
 
 public class CodeGeneratorVisitor implements ASTVisitor {
+
+    private Stack<Map<String, String>> scopeStack = new Stack<>();
+
+    private SymbolTable symbolTable = new SymbolTable();
 
 
     @Override
     public Object visitProgram(Program program, Object arg) throws PLCCompilerException {
         StringBuilder code = new StringBuilder();
-
-        Stack<Map<String, NameDef>> scopeStack = new Stack<>();
-        scopeStack.push(new HashMap<>()); // Push the global scope
 
         // Get the name of the program
         String className = program.getName();
@@ -30,13 +34,12 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         code.append(String.format("package %s;\n", packageName));
         code.append("import edu.ufl.cise.cop4020fa23.runtime.ConsoleIO;\n\n"); // Import statement for ConsoleIO
 
-
         // Visit the parameters (name definitions)
         StringBuilder params = new StringBuilder();
         Map<String, String> paramMap = new HashMap<>(); // Create a map for parameter name mapping
         for (NameDef param : program.getParams()) {
             String originalName = param.getName();
-            String paramName = "param_" + originalName;
+            String paramName = isReservedKeyword(originalName) ? "param_" + originalName : originalName;
             String paramType = getJavaType(param.getType());  // Convert to Java type
             String paramCode = String.format("%s %s", paramType, paramName);
             if (params.length() > 0) params.append(", ");
@@ -57,7 +60,6 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
         return code.toString();
     }
-
     private String getJavaType(Type type) {
         switch (type) {
             case BOOLEAN: return "boolean";
@@ -68,6 +70,24 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         }
     }
 
+    private boolean isReservedKeyword(String name) {
+        // List of reserved Java keywords
+        Set<String> reservedKeywords = Set.of(
+                "abstract", "continue", "for", "new", "switch",
+                "assert", "default", "goto", "package", "synchronized",
+                "boolean", "do", "if", "private", "this",
+                "break", "double", "implements", "protected", "throw",
+                "byte", "else", "import", "public", "throws",
+                "case", "enum", "instanceof", "return", "transient",
+                "catch", "extends", "int", "short", "try",
+                "char", "final", "interface", "static", "void",
+                "class", "finally", "long", "strictfp", "volatile",
+                "const", "float", "native", "super", "while",
+                // Adding "true", "false", and "null" which are not technically keywords, but are literals
+                "true", "false", "null"
+        );
+        return reservedKeywords.contains(name);
+    }
 
 
     @Override
@@ -124,13 +144,50 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
 
 
+//    @Override
+//    public Object visitDeclaration(Declaration declaration, Object arg) throws PLCCompilerException {
+//        StringBuilder code = new StringBuilder();
+//        NameDef nameDef = declaration.getNameDef();
+//
+//        // Generate code for the declaration
+//        String nameDefCode = (String) nameDef.visit(this, arg);
+//        code.append(nameDefCode);
+//
+//        // Handle initializer if present
+//        Expr initializer = declaration.getInitializer();
+//        if (initializer != null) {
+//            String exprCode = (String) initializer.visit(this, arg);
+//            code.append(" = ").append(exprCode);
+//        }
+//
+//        code.append(";");
+//        return code.toString();
+//    }
+
     @Override
-    public Object visitDeclaration(Declaration declaration, Object arg) throws PLCCompilerException {
+    public Object visitDeclaration(Declaration declaration, Object arg) throws TypeCheckException, PLCCompilerException {
         StringBuilder code = new StringBuilder();
         NameDef nameDef = declaration.getNameDef();
 
+        // Check if name is already defined in the current scope
+        String originalName = nameDef.getName();
+        String scopedName = originalName;
+
+        if (symbolTable.isDefinedInCurrentScope(originalName)) {
+            // If already defined, generate a unique name
+            scopedName = generateUniqueName(originalName);
+        } else {
+            // Insert into the symbol table if not already defined
+            try {
+                symbolTable.insert(nameDef);
+            } catch (TypeCheckException e) {
+                // Handle exception, perhaps by logging or rethrowing
+                System.err.println("Type check exception: " + e.getMessage());
+            }
+        }
+
         // Generate code for the declaration
-        String nameDefCode = (String) nameDef.visit(this, arg);
+        String nameDefCode = String.format("%s %s", getJavaType(nameDef.getType()), scopedName);
         code.append(nameDefCode);
 
         // Handle initializer if present
@@ -144,6 +201,13 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         return code.toString();
     }
 
+    private int uniqueId = 0; // Member variable to generate unique names
+
+
+    private String generateUniqueName(String baseName) {
+        // Implement your logic to generate a unique name
+        return baseName + "_" + uniqueId++; // Example implementation
+    }
 
 
     @Override
@@ -166,11 +230,10 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             String paramName = paramMap.getOrDefault(originalName, originalName);
             return paramName;
         } else {
-            // Implement appropriate logic for cases where 'arg' is not a Map
-            // For example, returning the identifier's name as is
             return identExpr.getName();
         }
     }
+
 
 
 
@@ -356,10 +419,6 @@ public class CodeGeneratorVisitor implements ASTVisitor {
     public Object visitBlockStatement(StatementBlock statementBlock, Object arg) throws PLCCompilerException {
         return statementBlock.getBlock().visit(this, arg);
     }
-
-
-
-
 
 
     @Override

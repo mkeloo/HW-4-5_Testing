@@ -80,4 +80,13 @@ class SymbolTable {
         return null;
     }
 
+    public boolean isDefinedInCurrentScope(String name) {
+        LinkedList<Symbol> list = table.get(name);
+        if (list != null && !list.isEmpty()) {
+            return list.getFirst().getSerialNumber() == currentScope;
+        }
+        return false;
+    }
+
+
 }
