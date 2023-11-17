@@ -206,6 +206,7 @@ public class CodeGeneratorVisitor implements ASTVisitor {
     }
 
 
+
     @Override
     public Object visitBinaryExpr(BinaryExpr binaryExpr, Object arg) throws PLCCompilerException {
         StringBuilder sb = new StringBuilder();
