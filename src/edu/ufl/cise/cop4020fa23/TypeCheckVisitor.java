@@ -367,17 +367,39 @@ public class TypeCheckVisitor implements ASTVisitor {
 
     /* ======================= MOKSH ======================= */
 
+//    @Override
+//    public Object visitExpandedPixelExpr(ExpandedPixelExpr expr, Object arg) throws TypeCheckException, PLCCompilerException {
+//        Type redType = (Type) expr.getRed().visit(this, arg);
+//        Type greenType = (Type) expr.getGreen().visit(this, arg);
+//        Type blueType = (Type) expr.getBlue().visit(this, arg);
+//
+//        if (redType != Type.INT || greenType != Type.INT || blueType != Type.INT) {
+//            throw new TypeCheckException("all components of an ExpandedPixelExpr must be of type INT");
+//        }
+//
+//        return Type.PIXEL;
+//    }
+
     @Override
     public Object visitExpandedPixelExpr(ExpandedPixelExpr expr, Object arg) throws TypeCheckException, PLCCompilerException {
-        Type redType = (Type) expr.getRed().visit(this, arg);
-        Type greenType = (Type) expr.getGreen().visit(this, arg);
-        Type blueType = (Type) expr.getBlue().visit(this, arg);
+        // Check each component and update type if it's a channel selector
+        checkAndUpdateExprType(expr.getRed(), arg);
+        checkAndUpdateExprType(expr.getGreen(), arg);
+        checkAndUpdateExprType(expr.getBlue(), arg);
 
-        if (redType != Type.INT || greenType != Type.INT || blueType != Type.INT) {
-            throw new TypeCheckException("all components of an ExpandedPixelExpr must be of type INT");
-        }
-
+        expr.setType(Type.PIXEL);
         return Type.PIXEL;
+    }
+
+    private void checkAndUpdateExprType(Expr expr, Object arg) throws TypeCheckException, PLCCompilerException {
+        expr.visit(this, arg);
+        if (expr instanceof PostfixExpr) {
+            PostfixExpr postfixExpr = (PostfixExpr) expr;
+            if (postfixExpr.channel() != null) {
+                // If it's a channel extraction from a pixel, treat it as an INT type
+                expr.setType(Type.INT);
+            }
+        }
     }
 
     @Override
