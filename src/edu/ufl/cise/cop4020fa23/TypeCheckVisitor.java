@@ -543,10 +543,35 @@ public class TypeCheckVisitor implements ASTVisitor {
         return guardType;
     }
 
+//    @Override
+//    public Object visitReturnStatement(ReturnStatement returnStatement, Object arg) throws TypeCheckException, PLCCompilerException {
+//        Expr returnedExpr = returnStatement.getE();
+//        Type returnedType = (Type) returnedExpr.visit(this, arg);
+//        if (returnTypeStack.isEmpty()) {
+//            throw new TypeCheckException("unexpected :( return statement outside of function or method scope.");
+//        }
+//        Type expectedReturnType = returnTypeStack.peek();
+//        if (returnedType != expectedReturnType) {
+//            throw new TypeCheckException("mismatched return type :(. Expected " + expectedReturnType + " but found " + returnedType);
+//        }
+//        return returnedType;
+//    }
+
+
     @Override
     public Object visitReturnStatement(ReturnStatement returnStatement, Object arg) throws TypeCheckException, PLCCompilerException {
         Expr returnedExpr = returnStatement.getE();
         Type returnedType = (Type) returnedExpr.visit(this, arg);
+
+        // Special handling for PostfixExpr with a channel selector
+        if (returnedExpr instanceof PostfixExpr) {
+            PostfixExpr postfixExpr = (PostfixExpr) returnedExpr;
+            if (postfixExpr.channel() != null) {
+                // Accessing a color channel of a pixel results in an int
+                returnedType = Type.INT;
+            }
+        }
+
         if (returnTypeStack.isEmpty()) {
             throw new TypeCheckException("unexpected :( return statement outside of function or method scope.");
         }
@@ -554,6 +579,7 @@ public class TypeCheckVisitor implements ASTVisitor {
         if (returnedType != expectedReturnType) {
             throw new TypeCheckException("mismatched return type :(. Expected " + expectedReturnType + " but found " + returnedType);
         }
+
         return returnedType;
     }
 

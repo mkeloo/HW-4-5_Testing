@@ -51,16 +51,29 @@ class CodeGenTest_Hw5_starter {
 	 * @param image
 	 * @throws IOException
 	 */
+//	void show(BufferedImage image) throws IOException {
+//		if (VERBOSE) {
+//			ConsoleIO.displayImageOnScreen(image);
+//			if (WAIT_FOR_INPUT) {
+//				System.out.println("Enter a char");
+//				int ch = System.in.read();
+//			}
+//		}
+//
+//	}
+
+
 	void show(BufferedImage image) throws IOException {
 		if (VERBOSE) {
 			ConsoleIO.displayImageOnScreen(image);
-			if (WAIT_FOR_INPUT) {
+			if (false) {
 				System.out.println("Enter a char");
 				int ch = System.in.read();
 			}
 		}
 
 	}
+
 
 	void compareImages(BufferedImage image0, BufferedImage image1) {
 		assertEquals(image0.getWidth(), image1.getWidth(), "widths not equal");
@@ -436,7 +449,7 @@ class CodeGenTest_Hw5_starter {
 		assertEquals(2, result);
 	}
 
-	/*
+	/**
 	 * package edu.ufl.cise.cop4020fa23; public class gcd{ public static int
 	 * apply(int a$1, int b$1){ {boolean continue$0= false; while(!continue$0){
 	 * continue$0=true; if(a$1<b$1){ continue$0 = false; { b$1=(b$1-a$1); } }

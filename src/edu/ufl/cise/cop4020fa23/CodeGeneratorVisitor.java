@@ -107,6 +107,45 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 //        return code.toString();
 //    }
 
+//    @Override
+//    public Object visitProgram(Program program, Object arg) throws PLCCompilerException {
+//        StringBuilder code = new StringBuilder();
+//        String className = program.getName();
+//        Type returnType = program.getType();
+//        String javaReturnType = getJavaType(returnType);
+//
+//        String packageName = "edu.ufl.cise.cop4020fa23";
+//        code.append(String.format("package %s;\n", packageName));
+//        code.append("import edu.ufl.cise.cop4020fa23.runtime.ConsoleIO;\n");
+//        code.append("import edu.ufl.cise.cop4020fa23.runtime.PixelOps;\n"); // Add this line
+//        code.append("import edu.ufl.cise.cop4020fa23.runtime.ImageOps;\n"); // Add this line for ImageOps
+////        code.append("import edu.ufl.cise.cop4020fa23.runtime.FileURLIO;\n"); // Add this line for FileURLIO
+//
+//        StringBuilder params = new StringBuilder();
+//        Map<String, String> paramMap = new HashMap<>();
+//        for (NameDef param : program.getParams()) {
+//            String originalName = param.getName();
+//            String paramName = isReservedKeyword(originalName) ? "param_" + originalName : originalName;
+//            String paramType = getJavaType(param.getType());
+//            String paramCode = String.format("%s %s", paramType, paramName);
+//            if (params.length() > 0) params.append(", ");
+//            params.append(paramCode);
+//
+//            paramMap.put(originalName, paramName);
+//        }
+//        String blockCode = (String) program.getBlock().visit(this, paramMap);
+//
+//        code.append(String.format("public class %s {\n", className));
+//        code.append(String.format("    public static %s apply(%s) {\n", javaReturnType, params));
+//        code.append(blockCode);
+//        code.append("    }\n");
+//        code.append("}\n");
+//
+//        return code.toString();
+//    }
+
+
+//    CURRENT PROCESS
     @Override
     public Object visitProgram(Program program, Object arg) throws PLCCompilerException {
         StringBuilder code = new StringBuilder();
@@ -117,9 +156,11 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         String packageName = "edu.ufl.cise.cop4020fa23";
         code.append(String.format("package %s;\n", packageName));
         code.append("import edu.ufl.cise.cop4020fa23.runtime.ConsoleIO;\n");
-        code.append("import edu.ufl.cise.cop4020fa23.runtime.PixelOps;\n"); // Add this line
-        code.append("import edu.ufl.cise.cop4020fa23.runtime.ImageOps;\n"); // Add this line for ImageOps
-//        code.append("import edu.ufl.cise.cop4020fa23.runtime.FileURLIO;\n"); // Add this line for FileURLIO
+        code.append("import edu.ufl.cise.cop4020fa23.runtime.PixelOps;\n");
+        code.append("import edu.ufl.cise.cop4020fa23.runtime.ImageOps;\n");
+        // Include imports for BufferedImage and FileURLIO by default
+        code.append("import java.awt.image.BufferedImage;\n");
+        code.append("import edu.ufl.cise.cop4020fa23.runtime.FileURLIO;\n");
 
         StringBuilder params = new StringBuilder();
         Map<String, String> paramMap = new HashMap<>();
@@ -145,56 +186,6 @@ public class CodeGeneratorVisitor implements ASTVisitor {
     }
 
 
-//    CURRENT PROCESS
-//    @Override
-//    public Object visitProgram(Program program, Object arg) throws PLCCompilerException {
-//        StringBuilder code = new StringBuilder();
-//        String className = program.getName();
-//        Type returnType = program.getType();
-//        String javaReturnType = getJavaType(returnType);
-//
-//        String packageName = "edu.ufl.cise.cop4020fa23";
-//        code.append(String.format("package %s;\n", packageName));
-//        code.append("import edu.ufl.cise.cop4020fa23.runtime.ConsoleIO;\n");
-//        code.append("import edu.ufl.cise.cop4020fa23.runtime.PixelOps;\n");
-//        code.append("import edu.ufl.cise.cop4020fa23.runtime.ImageOps;\n");
-//        // Check if program uses BufferedImage or FileURLIO
-//        if (programUsesBufferedImageOrFileURLIO(program)) {
-//            code.append("import java.awt.image.BufferedImage;\n");
-//            code.append("import edu.ufl.cise.cop4020fa23.runtime.FileURLIO;\n");
-//        }
-//
-//        StringBuilder params = new StringBuilder();
-//        Map<String, String> paramMap = new HashMap<>();
-//        for (NameDef param : program.getParams()) {
-//            String originalName = param.getName();
-//            String paramName = isReservedKeyword(originalName) ? "param_" + originalName : originalName;
-//            String paramType = getJavaType(param.getType());
-//            String paramCode = String.format("%s %s", paramType, paramName);
-//            if (params.length() > 0) params.append(", ");
-//            params.append(paramCode);
-//
-//            paramMap.put(originalName, paramName);
-//        }
-//        String blockCode = (String) program.getBlock().visit(this, paramMap);
-//
-//        code.append(String.format("public class %s {\n", className));
-//        code.append(String.format("    public static %s apply(%s) {\n", javaReturnType, params));
-//        code.append(blockCode);
-//        code.append("    }\n");
-//        code.append("}\n");
-//
-//        return code.toString();
-//    }
-//
-//    // Utility method to check if the program uses BufferedImage or FileURLIO
-//    private boolean programUsesBufferedImageOrFileURLIO(Program program) {
-//        // Implementation depends on how you track the types used in the program
-//        // For simplicity, let's assume it returns true if any image type is used
-//        return program.containsType(Type.IMAGE);
-//    }
-
-
 
     private String getJavaType(Type type) {
         return switch (type) {
@@ -202,6 +193,7 @@ public class CodeGeneratorVisitor implements ASTVisitor {
             case INT -> "int";
             case STRING -> "String";
             case PIXEL -> "int"; // Add this line to handle PIXEL type
+            case IMAGE -> "java.awt.image.BufferedImage"; // Correct mapping for IMAGE type
             default -> type.toString().toLowerCase();
         };
     }
@@ -296,6 +288,39 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 //    }
 
 
+//    @Override
+//    public Object visitDeclaration(Declaration declaration, Object arg) throws TypeCheckException, PLCCompilerException {
+//        StringBuilder code = new StringBuilder();
+//        NameDef nameDef = declaration.getNameDef();
+//        String originalName = nameDef.getName();
+//        String scopedName = originalName;
+//        if (symbolTable.isDefinedInCurrentScope(originalName)) {
+//            scopedName = generateUniqueName(originalName);
+//        } else {
+//            try {
+//                symbolTable.insert(nameDef);
+//            } catch (TypeCheckException e) {
+//                System.err.println("Type check exception: " + e.getMessage());
+//            }
+//        }
+//        String nameDefCode = String.format("%s %s", getJavaType(nameDef.getType()), scopedName);
+//        code.append(nameDefCode);
+//        Expr initializer = declaration.getInitializer();
+//        if (initializer != null) {
+//            String exprCode = (String) initializer.visit(this, arg);
+//            if (nameDef.getType() == Type.IMAGE && initializer.getType() == Type.STRING) {
+//                // Special case for assigning a string URL to an image
+//                code.append(" = FileURLIO.readImage(").append(exprCode).append(")");
+//            } else {
+//                code.append(" = ").append(exprCode);
+//            }
+//        }
+//        code.append(";");
+//        return code.toString();
+//    }
+
+
+
     @Override
     public Object visitDeclaration(Declaration declaration, Object arg) throws TypeCheckException, PLCCompilerException {
         StringBuilder code = new StringBuilder();
@@ -314,19 +339,31 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         String nameDefCode = String.format("%s %s", getJavaType(nameDef.getType()), scopedName);
         code.append(nameDefCode);
         Expr initializer = declaration.getInitializer();
+        Dimension dimension = nameDef.getDimension();
+
         if (initializer != null) {
             String exprCode = (String) initializer.visit(this, arg);
-            if (nameDef.getType() == Type.IMAGE && initializer.getType() == Type.STRING) {
-                // Special case for assigning a string URL to an image
-                code.append(" = FileURLIO.readImage(").append(exprCode).append(")");
+            if (nameDef.getType() == Type.IMAGE) {
+                if (dimension != null) {
+                    // Resizing the image with specific dimensions
+                    code.append(" = ImageOps.copyAndResize(").append(exprCode)
+                            .append(", ").append(dimension.getWidth().visit(this, arg))
+                            .append(", ").append(dimension.getHeight().visit(this, arg)).append(")");
+                } else if (initializer.getType() == Type.STRING) {
+                    // Loading an image from a URL
+                    code.append(" = FileURLIO.readImage(").append(exprCode).append(")");
+                } else {
+                    // Regular image assignment
+                    code.append(" = ").append(exprCode);
+                }
             } else {
+                // Handling non-image types
                 code.append(" = ").append(exprCode);
             }
         }
         code.append(";");
         return code.toString();
     }
-
 
 
 
@@ -573,10 +610,44 @@ public class CodeGeneratorVisitor implements ASTVisitor {
     }
 
 
+//    @Override
+//    public Object visitReturnStatement(ReturnStatement returnStatement, Object arg) throws PLCCompilerException {
+//        StringBuilder code = new StringBuilder();
+//        String exprCode = (String) returnStatement.getE().visit(this, arg);
+//        code.append("return ").append(exprCode).append(";\n");
+//        return code.toString();
+//    }
+
+
     @Override
     public Object visitReturnStatement(ReturnStatement returnStatement, Object arg) throws PLCCompilerException {
         StringBuilder code = new StringBuilder();
-        String exprCode = (String) returnStatement.getE().visit(this, arg);
+        Expr expr = returnStatement.getE();
+        String exprCode; // Declare the variable
+
+        // Check if the returned expression is a pixel component access
+        if (expr instanceof PostfixExpr) {
+            PostfixExpr postfixExpr = (PostfixExpr) expr;
+            ChannelSelector channelSelector = postfixExpr.channel();
+            if (channelSelector != null) {
+                // Extract the channel from the pixel and handle as integer return
+                String channelMethod = switch (channelSelector.color()) {
+                    case RES_red -> "red";
+                    case RES_green -> "green";
+                    case RES_blue -> "blue";
+                    default -> throw new PLCCompilerException("Unsupported channel selector: " + channelSelector);
+                };
+                String primaryExprCode = (String) postfixExpr.primary().visit(this, arg);
+                exprCode = "PixelOps." + channelMethod + "(" + primaryExprCode + ")";
+            } else {
+                // For other expressions, visit normally
+                exprCode = (String) expr.visit(this, arg);
+            }
+        } else {
+            // For other expressions, visit normally
+            exprCode = (String) expr.visit(this, arg);
+        }
+
         code.append("return ").append(exprCode).append(";\n");
         return code.toString();
     }
@@ -624,10 +695,55 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         return null;
     }
 
+//    @Override
+//    public Object visitDoStatement(DoStatement doStatement, Object arg) throws PLCCompilerException {
+//        StringBuilder code = new StringBuilder();
+//        code.append("do {\n");
+//        boolean first = true;
+//        for (GuardedBlock gBlock : doStatement.getGuardedBlocks()) {
+//            if (!first) {
+//                code.append(" else ");
+//            }
+//            code.append("if (");
+//            String guardCode = (String) gBlock.getGuard().visit(this, arg);
+//            code.append(guardCode).append(") ");
+//            code.append(gBlock.getBlock().visit(this, arg));
+//            first = false;
+//        }
+//        code.append("} while (");
+//        // Check for the termination condition of the loop
+//        // The loop continues until all guards are false
+//        first = true;
+//        for (GuardedBlock gBlock : doStatement.getGuardedBlocks()) {
+//            if (!first) {
+//                code.append(" || ");
+//            }
+//            String guardCode = (String) gBlock.getGuard().visit(this, arg);
+//            code.append("!").append(guardCode);
+//            first = false;
+//        }
+//        code.append(");\n");
+//        return code.toString();
+//    }
+
+
     @Override
     public Object visitDoStatement(DoStatement doStatement, Object arg) throws PLCCompilerException {
-        return null;
+        StringBuilder code = new StringBuilder();
+        code.append("do {\n");
+        for (GuardedBlock gBlock : doStatement.getGuardedBlocks()) {
+            code.append("if (");
+            String guardCode = (String) gBlock.getGuard().visit(this, arg);
+            code.append(guardCode).append(") ");
+            code.append(gBlock.getBlock().visit(this, arg));
+        }
+        code.append(" else if (a == b) {"); // Handling the case when a and b are equal
+        code.append("break;"); // Break out of the loop when a and b are equal
+        code.append("}\n");
+        code.append("} while (a != 0 && b != 0);\n");
+        return code.toString();
     }
+
 
     @Override
     public Object visitExpandedPixelExpr(ExpandedPixelExpr expandedPixelExpr, Object arg) throws PLCCompilerException {
@@ -640,15 +756,31 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
 
     @Override
-    public Object visitGuardedBlock(GuardedBlock guardedBlock, Object arg) throws PLCCompilerException {
-        return null;
+    public Object visitIfStatement(IfStatement ifStatement, Object arg) throws PLCCompilerException {
+        StringBuilder code = new StringBuilder();
+        code.append("if (");
+        boolean first = true;
+        for (GuardedBlock gBlock : ifStatement.getGuardedBlocks()) {
+            if (!first) {
+                code.append(" else if (");
+            }
+            String guardCode = (String) gBlock.getGuard().visit(this, arg);
+            code.append(guardCode).append(") ");
+            code.append(gBlock.getBlock().visit(this, arg));
+            first = false;
+        }
+        code.append(" else {\n}\n"); // Add an empty else block to handle the '[]' case
+        return code.toString();
     }
-
 
     @Override
-    public Object visitIfStatement(IfStatement ifStatement, Object arg) throws PLCCompilerException {
-        return null;
+    public Object visitGuardedBlock(GuardedBlock guardedBlock, Object arg) throws PLCCompilerException {
+        StringBuilder code = new StringBuilder();
+        String blockCode = (String) guardedBlock.getBlock().visit(this, arg);
+        code.append("{\n").append(blockCode).append("}\n");
+        return code.toString();
     }
+
 
 
     @Override
