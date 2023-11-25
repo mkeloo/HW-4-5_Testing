@@ -320,7 +320,7 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 //    }
 
 
-
+//    SOLVED
     @Override
     public Object visitDeclaration(Declaration declaration, Object arg) throws TypeCheckException, PLCCompilerException {
         StringBuilder code = new StringBuilder();
@@ -364,6 +364,49 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         code.append(";");
         return code.toString();
     }
+
+
+//    @Override
+//    public Object visitDeclaration(Declaration declaration, Object arg) throws TypeCheckException, PLCCompilerException {
+//        StringBuilder code = new StringBuilder();
+//        NameDef nameDef = declaration.getNameDef();
+//        String originalName = nameDef.getName();
+//        String scopedName = originalName;
+//        if (symbolTable.isDefinedInCurrentScope(originalName)) {
+//            scopedName = generateUniqueName(originalName);
+//        } else {
+//            try {
+//                symbolTable.insert(nameDef);
+//            } catch (TypeCheckException e) {
+//                System.err.println("Type check exception: " + e.getMessage());
+//            }
+//        }
+//        String nameDefCode = String.format("%s %s", getJavaType(nameDef.getType()), scopedName);
+//        code.append(nameDefCode);
+//        Expr initializer = declaration.getInitializer();
+//        Dimension dimension = nameDef.getDimension();
+//
+//        if (nameDef.getType() == Type.IMAGE) {
+//            // Handling image declaration
+//            if (dimension != null) {
+//                // Initialize the image with specified dimensions
+//                code.append(" = ImageOps.makeImage(")
+//                        .append(dimension.getWidth().visit(this, arg))
+//                        .append(", ")
+//                        .append(dimension.getHeight().visit(this, arg))
+//                        .append(")");
+//            } else {
+//                // If dimension is not specified, throw an exception
+//                throw new PLCCompilerException("Image declaration without dimensions is not allowed");
+//            }
+//        } else if (initializer != null) {
+//            // Handling non-image types
+//            String exprCode = (String) initializer.visit(this, arg);
+//            code.append(" = ").append(exprCode);
+//        }
+//        code.append(";");
+//        return code.toString();
+//    }
 
 
 
@@ -456,6 +499,103 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 //    }
 
 
+//    @Override
+//    public Object visitBinaryExpr(BinaryExpr binaryExpr, Object arg) throws PLCCompilerException {
+//        StringBuilder sb = new StringBuilder();
+//        Object leftExprCode = binaryExpr.getLeftExpr().visit(this, arg);
+//        Type leftExprType = binaryExpr.getLeftExpr().getType();
+//        Object rightExprCode = binaryExpr.getRightExpr().visit(this, arg);
+//        Type rightExprType = binaryExpr.getRightExpr().getType();
+//        Kind opKind = binaryExpr.getOpKind();
+//
+//        if ((leftExprType == Type.PIXEL || rightExprType == Type.PIXEL) && opKind == Kind.PLUS) {
+//            // Using ImageOps.binaryPackedPixelPixelOp for pixel addition
+//            sb.append("ImageOps.binaryPackedPixelPixelOp(ImageOps.OP.PLUS, ")
+//                    .append(leftExprCode).append(", ").append(rightExprCode).append(")");
+//        } else if (leftExprType == Type.STRING && opKind == Kind.EQ) {
+//            sb.append(leftExprCode).append(".equals(").append(rightExprCode).append(")");
+//        } else if (opKind == Kind.EXP) {
+//            sb.append("((int)Math.round(Math.pow(").append(leftExprCode).append(", ")
+//                    .append(rightExprCode).append(")))");
+//        } else {
+//            String operator = switch(opKind) {
+//                case PLUS -> "+";
+//                case MINUS -> "-";
+//                case TIMES -> "*";
+//                case DIV -> "/";
+//                case MOD -> "%";
+//                case AND -> "&&";
+//                case OR -> "||";
+//                case EQ -> "==";
+//                case BANG -> "!";
+//                case LT -> "<";
+//                case GT -> ">";
+//                case LE -> "<=";
+//                case GE -> ">=";
+//                default -> throw new PLCCompilerException("Unsupported binary operator: " + opKind);
+//            };
+//            sb.append("(").append(leftExprCode).append(" ").append(operator).append(" ")
+//                    .append(rightExprCode).append(")");
+//        }
+//
+//        return sb.toString();
+//    }
+
+
+//    @Override
+//    public Object visitBinaryExpr(BinaryExpr binaryExpr, Object arg) throws PLCCompilerException {
+//        StringBuilder sb = new StringBuilder();
+//        Object leftExprCode = binaryExpr.getLeftExpr().visit(this, arg);
+//        Type leftExprType = binaryExpr.getLeftExpr().getType();
+//        Object rightExprCode = binaryExpr.getRightExpr().visit(this, arg);
+//        Type rightExprType = binaryExpr.getRightExpr().getType();
+//        Kind opKind = binaryExpr.getOpKind();
+//
+//        // Handling image and pixel binary operations
+//        if (leftExprType == Type.IMAGE || rightExprType == Type.IMAGE) {
+//            String imageOpMethod = switch(opKind) {
+//                case PLUS -> "binaryImageImageOp";
+//                case MINUS, TIMES, DIV, MOD -> // Appropriate methods for these operations
+//                        throw new PLCCompilerException("Operation " + opKind + " not supported for images.");
+//                default -> throw new PLCCompilerException("Unsupported binary operator for images: " + opKind);
+//            };
+//            sb.append("ImageOps.").append(imageOpMethod)
+//                    .append("(ImageOps.OP.").append(opKind.name())
+//                    .append(", ").append(leftExprCode).append(", ").append(rightExprCode).append(")");
+//        } else if (leftExprType == Type.PIXEL && rightExprType == Type.PIXEL) {
+//            // Handling binary operations between two pixels
+//            sb.append("ImageOps.binaryPackedPixelPixelOp(ImageOps.OP.")
+//                    .append(opKind.name()).append(", ")
+//                    .append(leftExprCode).append(", ").append(rightExprCode).append(")");
+//        } else if (opKind == Kind.EQ && leftExprType == Type.STRING) {
+//            // Handling string equality
+//            sb.append(leftExprCode).append(".equals(").append(rightExprCode).append(")");
+//        } else {
+//            // Handling other binary expressions
+//            String operator = switch(opKind) {
+//                case PLUS -> "+";
+//                case MINUS -> "-";
+//                case TIMES -> "*";
+//                case DIV -> "/";
+//                case MOD -> "%";
+//                case AND -> "&&";
+//                case OR -> "||";
+//                case EQ -> "==";
+//                case BANG -> "!";
+//                case LT -> "<";
+//                case GT -> ">";
+//                case LE -> "<=";
+//                case GE -> ">=";
+//                default -> throw new PLCCompilerException("Unsupported binary operator: " + opKind);
+//            };
+//            sb.append("(").append(leftExprCode).append(" ").append(operator).append(" ")
+//                    .append(rightExprCode).append(")");
+//        }
+//
+//        return sb.toString();
+//    }
+
+
     @Override
     public Object visitBinaryExpr(BinaryExpr binaryExpr, Object arg) throws PLCCompilerException {
         StringBuilder sb = new StringBuilder();
@@ -465,16 +605,37 @@ public class CodeGeneratorVisitor implements ASTVisitor {
         Type rightExprType = binaryExpr.getRightExpr().getType();
         Kind opKind = binaryExpr.getOpKind();
 
-        if ((leftExprType == Type.PIXEL || rightExprType == Type.PIXEL) && opKind == Kind.PLUS) {
-            // Using ImageOps.binaryPackedPixelPixelOp for pixel addition
-            sb.append("ImageOps.binaryPackedPixelPixelOp(ImageOps.OP.PLUS, ")
+        // Check if the operation is between two images
+        if (leftExprType == Type.IMAGE && rightExprType == Type.IMAGE) {
+            sb.append("ImageOps.binaryImageImageOp(ImageOps.OP.")
+                    .append(opKind.name()).append(", ")
                     .append(leftExprCode).append(", ").append(rightExprCode).append(")");
-        } else if (leftExprType == Type.STRING && opKind == Kind.EQ) {
+        }
+        // Check if the operation is between an image and a pixel
+        else if (leftExprType == Type.IMAGE && rightExprType == Type.PIXEL ||
+                leftExprType == Type.PIXEL && rightExprType == Type.IMAGE) {
+            sb.append("ImageOps.binaryImagePixelOp(ImageOps.OP.")
+                    .append(opKind.name()).append(", ")
+                    .append(leftExprCode).append(", ").append(rightExprCode).append(")");
+        }
+        // Check if the operation is between an image and an int
+        else if (leftExprType == Type.IMAGE && rightExprType == Type.INT) {
+            sb.append("ImageOps.binaryImageScalarOp(ImageOps.OP.")
+                    .append(opKind.name()).append(", ")
+                    .append(leftExprCode).append(", ").append(rightExprCode).append(")");
+        }
+        // Check if the operation is between two pixels
+        else if (leftExprType == Type.PIXEL && rightExprType == Type.PIXEL) {
+            sb.append("ImageOps.binaryPackedPixelPixelOp(ImageOps.OP.")
+                    .append(opKind.name()).append(", ")
+                    .append(leftExprCode).append(", ").append(rightExprCode).append(")");
+        }
+        // String equality check
+        else if (opKind == Kind.EQ && leftExprType == Type.STRING) {
             sb.append(leftExprCode).append(".equals(").append(rightExprCode).append(")");
-        } else if (opKind == Kind.EXP) {
-            sb.append("((int)Math.round(Math.pow(").append(leftExprCode).append(", ")
-                    .append(rightExprCode).append(")))");
-        } else {
+        }
+        // Other binary operations
+        else {
             String operator = switch(opKind) {
                 case PLUS -> "+";
                 case MINUS -> "-";
@@ -497,8 +658,6 @@ public class CodeGeneratorVisitor implements ASTVisitor {
 
         return sb.toString();
     }
-
-
 
 
     @Override

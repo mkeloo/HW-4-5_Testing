@@ -187,6 +187,12 @@ public class TypeCheckVisitor implements ASTVisitor {
                     return Type.PIXEL;
                 }
                 break;
+            case MOD:
+                if (leftType == Type.INT && rightType == Type.INT) {
+                    binaryExpr.setType(Type.INT);
+                    return Type.INT;
+                }
+                break;
             default:
                 throw new TypeCheckException("unsupported binary operation: " + binaryExpr.getOpKind());
         }
@@ -471,26 +477,56 @@ public class TypeCheckVisitor implements ASTVisitor {
 
 
 
+//    @Override
+//    public Object visitAssignmentStatement(AssignmentStatement assignmentStatement, Object arg) throws TypeCheckException, PLCCompilerException {
+////        System.out.println("Visiting Assignment Statement: " + assignmentStatement.getlValue().getName());
+//        LValue lValue = assignmentStatement.getlValue();
+//        Type lValueType;
+//        symbolTable.enterScope();
+//        if (lValue.getPixelSelector() != null) {
+//            lValueType = (Type) lValue.visit(this, IN_LVALUE_CONTEXT);
+//        } else {
+//            lValueType = (Type) lValue.visit(this, arg);
+//        }
+//        Type exprType = (Type) assignmentStatement.getE().visit(this, arg);
+//        symbolTable.leaveScope();
+//        if (!(lValueType == exprType
+//                || (lValueType == Type.PIXEL && exprType == Type.INT)
+//                || (lValueType == Type.IMAGE && (exprType == Type.PIXEL || exprType == Type.INT || exprType == Type.STRING)))) {
+//            throw new TypeCheckException("type mismatch in assignment. LValue type: " + lValueType + ", Expr type: " + exprType);
+//        }
+//        return exprType;
+//    }
+
     @Override
     public Object visitAssignmentStatement(AssignmentStatement assignmentStatement, Object arg) throws TypeCheckException, PLCCompilerException {
-//        System.out.println("Visiting Assignment Statement: " + assignmentStatement.getlValue().getName());
         LValue lValue = assignmentStatement.getlValue();
         Type lValueType;
         symbolTable.enterScope();
+
         if (lValue.getPixelSelector() != null) {
             lValueType = (Type) lValue.visit(this, IN_LVALUE_CONTEXT);
         } else {
             lValueType = (Type) lValue.visit(this, arg);
         }
+
         Type exprType = (Type) assignmentStatement.getE().visit(this, arg);
         symbolTable.leaveScope();
-        if (!(lValueType == exprType
+
+        // Check if the LValue is a pixel and the expression is an image
+        if (lValueType == Type.PIXEL && exprType == Type.IMAGE) {
+            // Handle the assignment logic here
+            // You may need to update this logic based on the specific requirements of your language
+            // For example, you could extract a specific pixel from the image if that's the intended behavior
+        } else if (!(lValueType == exprType
                 || (lValueType == Type.PIXEL && exprType == Type.INT)
                 || (lValueType == Type.IMAGE && (exprType == Type.PIXEL || exprType == Type.INT || exprType == Type.STRING)))) {
             throw new TypeCheckException("type mismatch in assignment. LValue type: " + lValueType + ", Expr type: " + exprType);
         }
-        return exprType;
+
+        return null; // or appropriate return value
     }
+
 
 
 
