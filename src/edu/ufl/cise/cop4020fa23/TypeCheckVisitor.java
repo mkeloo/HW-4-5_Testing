@@ -388,7 +388,6 @@ public class TypeCheckVisitor implements ASTVisitor {
 
     @Override
     public Object visitExpandedPixelExpr(ExpandedPixelExpr expr, Object arg) throws TypeCheckException, PLCCompilerException {
-        // Check each component and update type if it's a channel selector
         checkAndUpdateExprType(expr.getRed(), arg);
         checkAndUpdateExprType(expr.getGreen(), arg);
         checkAndUpdateExprType(expr.getBlue(), arg);
@@ -402,7 +401,6 @@ public class TypeCheckVisitor implements ASTVisitor {
         if (expr instanceof PostfixExpr) {
             PostfixExpr postfixExpr = (PostfixExpr) expr;
             if (postfixExpr.channel() != null) {
-                // If it's a channel extraction from a pixel, treat it as an INT type
                 expr.setType(Type.INT);
             }
         }
@@ -498,6 +496,35 @@ public class TypeCheckVisitor implements ASTVisitor {
 //        return exprType;
 //    }
 
+
+//    @Override
+//    public Object visitAssignmentStatement(AssignmentStatement assignmentStatement, Object arg) throws TypeCheckException, PLCCompilerException {
+//        LValue lValue = assignmentStatement.getlValue();
+//        Type lValueType;
+//        symbolTable.enterScope();
+//
+//        if (lValue.getPixelSelector() != null) {
+//            lValueType = (Type) lValue.visit(this, IN_LVALUE_CONTEXT);
+//        } else {
+//            lValueType = (Type) lValue.visit(this, arg);
+//        }
+//
+//        Type exprType = (Type) assignmentStatement.getE().visit(this, arg);
+//        symbolTable.leaveScope();
+//
+//        // Check if the LValue is a pixel and the expression is an image
+//        if (lValueType == Type.PIXEL && exprType == Type.IMAGE) {
+//            //  later
+//        } else if (!(lValueType == exprType
+//                || (lValueType == Type.PIXEL && exprType == Type.INT)
+//                || (lValueType == Type.IMAGE && (exprType == Type.PIXEL || exprType == Type.INT || exprType == Type.STRING)))) {
+//            throw new TypeCheckException("type mismatch in assignment. LValue type: " + lValueType + ", Expr type: " + exprType);
+//        }
+//
+//        return null;
+//    }
+//
+
     @Override
     public Object visitAssignmentStatement(AssignmentStatement assignmentStatement, Object arg) throws TypeCheckException, PLCCompilerException {
         LValue lValue = assignmentStatement.getlValue();
@@ -513,20 +540,20 @@ public class TypeCheckVisitor implements ASTVisitor {
         Type exprType = (Type) assignmentStatement.getE().visit(this, arg);
         symbolTable.leaveScope();
 
-        // Check if the LValue is a pixel and the expression is an image
-        if (lValueType == Type.PIXEL && exprType == Type.IMAGE) {
-            // Handle the assignment logic here
-            // You may need to update this logic based on the specific requirements of your language
-            // For example, you could extract a specific pixel from the image if that's the intended behavior
-        } else if (!(lValueType == exprType
-                || (lValueType == Type.PIXEL && exprType == Type.INT)
-                || (lValueType == Type.IMAGE && (exprType == Type.PIXEL || exprType == Type.INT || exprType == Type.STRING)))) {
-            throw new TypeCheckException("type mismatch in assignment. LValue type: " + lValueType + ", Expr type: " + exprType);
+        if (lValueType == Type.PIXEL) {
+            if (!(exprType == Type.PIXEL || exprType == Type.INT)) {
+                throw new TypeCheckException("Incompatible types in PIXEL assignment. LValue type: " + lValueType + ", Expr type: " + exprType);
+            }
+        } else if (lValueType == Type.IMAGE) {
+            if (!(exprType == Type.IMAGE || exprType == Type.PIXEL || exprType == Type.STRING)) {
+                throw new TypeCheckException("Incompatible types in IMAGE assignment. LValue type: " + lValueType + ", Expr type: " + exprType);
+            }
+        } else if (lValueType != exprType) {
+            throw new TypeCheckException("Type mismatch in assignment. LValue type: " + lValueType + ", Expr type: " + exprType);
         }
 
-        return null; // or appropriate return value
+        return null;
     }
-
 
 
 
@@ -599,11 +626,9 @@ public class TypeCheckVisitor implements ASTVisitor {
         Expr returnedExpr = returnStatement.getE();
         Type returnedType = (Type) returnedExpr.visit(this, arg);
 
-        // Special handling for PostfixExpr with a channel selector
         if (returnedExpr instanceof PostfixExpr) {
             PostfixExpr postfixExpr = (PostfixExpr) returnedExpr;
             if (postfixExpr.channel() != null) {
-                // Accessing a color channel of a pixel results in an int
                 returnedType = Type.INT;
             }
         }
